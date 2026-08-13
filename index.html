@@ -1,0 +1,1012 @@
+<!DOCTYPE html>
+<html lang="es" class="h-full">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Autotune 5100 VINTAGE — Procesador Vocal en Tiempo Real</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --c-bg1:#232427; --c-bg2:#131315; 
+    --c-panel:#3a3d45; 
+    --c-chassis:#1c1d20;
+    --c-screen:#03060a;
+    --c-red:#e5342c; --c-blue:#2f7de1;
+    --c-text:#e9eaec; --c-text-dim:#a0a2a8; --c-amber:#e8a33d; --c-green:#3fae5c;
+    --c-metal:#8a8c92;
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  body{
+    margin:0;
+    font-family:'Inter',sans-serif;
+    color:var(--c-text);
+    background:
+      repeating-linear-gradient(115deg, rgba(255,255,255,0.01) 0px, rgba(255,255,255,0.01) 1px, transparent 1px, transparent 3px),
+      radial-gradient(circle at 50% 20%, #2e3035 0%, var(--c-bg2) 100%);
+    min-height:100%;
+    -webkit-font-smoothing:antialiased;
+  }
+  .font-mono{font-family:'JetBrains Mono',monospace;}
+
+  /* ---------- ESTRUCTURA RACK ---------- */
+  .rack{
+    max-width:960px;
+    margin:0 auto;
+    padding:20px 10px 50px;
+  }
+  .faceplate{
+    background:linear-gradient(180deg,#2c2d31,#1c1d20);
+    border:2px solid #000;
+    border-radius:12px;
+    padding:16px;
+    box-shadow:0 30px 70px rgba(0,0,0,.7), inset 0 1px 0 rgba(255,255,255,.05);
+    position: relative;
+  }
+
+  .screw{width:12px;height:12px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#666,#333 70%);box-shadow:inset 0 0 0 1px #000, 0 1px 2px rgba(0,0,0,0.5);position:absolute;}
+  .screw::after{content:'';position:absolute;top:50%;left:50%;width:8px;height:2px;background:#1a1a1a;transform:translate(-50%,-50%) rotate(45deg);border-radius:1px;}
+  .screw.tl{top:10px;left:10px;} .screw.tr{top:10px;right:10px;}
+  .screw.bl{bottom:10px;left:10px;} .screw.br{bottom:10px;right:10px;}
+
+  /* ---------- ENCABEZADO ---------- */
+  .console-header{display:flex;align-items:center;justify-content:space-between;padding:10px 30px 20px; border-bottom: 1px solid rgba(0,0,0,0.3); margin-bottom: 15px;}
+  .brand{display:flex;align-items:center;gap:12px;}
+  .brand-badge{width:38px;height:38px;border-radius:4px;background:linear-gradient(160deg,#444,#222);display:flex;align-items:center;justify-content:center;box-shadow:0 2px 4px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.1); border: 1px solid #000;}
+  .brand-title{font-weight:800;font-size:18px;letter-spacing:.05em;line-height:1.1; color: var(--c-metal); text-shadow: 0 1px 0 #000;}
+  .brand-sub{font-size:11px;color:var(--c-text-dim);letter-spacing:.1em; text-transform: uppercase;}
+
+  /* ---------- PANTALLA PRINCIPAL ---------- */
+  .screen-bezel{
+    background:#111;
+    border:2px solid #000;
+    border-radius:8px;
+    padding:12px;
+    box-shadow:inset 0 3px 10px rgba(0,0,0,.8), 0 1px 0 rgba(255,255,255,.03);
+    margin-bottom: 20px;
+  }
+  .screen-topbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:0 4px 10px; border-bottom: 1px solid #222; margin-bottom: 10px;}
+  .led-group{display:flex;align-items:center;gap:6px;}
+  .led{width:9px;height:9px;border-radius:50%;background:#2a2b2e;box-shadow:inset 0 0 3px rgba(0,0,0,.8), 0 1px 0 rgba(255,255,255,0.05);}
+  .led.led-blue.on{background:#4f9bff;box-shadow:0 0 8px #2f7de1;}
+  .led.led-red.on{background:var(--c-red);box-shadow:0 0 10px var(--c-red);animation:blink 1s steps(2) infinite;}
+  .led.led-green.on{background:var(--c-green);box-shadow:0 0 8px var(--c-green);}
+  @keyframes blink{50%{opacity:.25;}}
+  .led-label{font-size:10px;color:var(--c-text-dim);letter-spacing:.08em;font-weight:700;}
+  .status-line{font-size:12px;color:var(--c-text-dim);flex:1;min-width:140px; font-style: italic;}
+  .live-readout{font-family:'JetBrains Mono';font-size:12px;color:var(--c-amber);font-weight:600; text-shadow: 0 0 4px rgba(232, 163, 61, 0.5);}
+
+  .screen-inner{background:var(--c-screen);border-radius:4px;border:1px solid #000;padding:10px;box-shadow:inset 0 0 15px rgba(0,0,0,.7);}
+  .scope-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;}
+  .scope-label{font-size:10px;font-weight:700;letter-spacing:.1em;color:var(--c-metal);text-transform:uppercase;}
+  .scope-sub{font-size:10px;color:var(--c-text-dim);font-family:'JetBrains Mono';}
+  .scope-canvas{width:100%;height:100px;display:block;background: #05070a; border-radius: 2px;}
+
+  .timeline-row{display:flex;align-items:center;gap:12px;padding:10px 4px 2px; border-top: 1px solid #222; margin-top: 10px;}
+  .transport-btn{width:36px;height:36px;flex:none;border-radius:4px;border:1px solid #000;background:linear-gradient(180deg,#444,#2a2c30);color:var(--c-text);font-size:14px;cursor:pointer;box-shadow:0 2px 3px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.1);}
+  .transport-btn:active{transform: translateY(1px); background: #2a2c30;}
+  .transport-btn:disabled{opacity:.4;cursor:not-allowed;}
+  .time-readout{font-family:'JetBrains Mono';font-size:12px;color:var(--c-amber);background:#000; padding: 4px 6px; border-radius: 3px; border: 1px solid #222; width:55px;text-align:center;flex:none;}
+  .seek-slider{flex:1;-webkit-appearance:none;height:6px;border-radius:3px;background:#000;outline:none;border: 1px solid #222;}
+  .seek-slider::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:2px;background:linear-gradient(180deg,var(--c-metal),#555);border:1px solid #000;cursor:pointer;}
+
+  /* ---------- BOTONERA PRINCIPAL ---------- */
+  .action-row{display:flex;flex-wrap:wrap;gap:10px;padding:0 0 20px;justify-content:center; border-bottom: 1px solid rgba(0,0,0,0.3); margin-bottom: 20px;}
+  .btn-console{
+    font-family:'Inter';font-weight:700;font-size:11px;letter-spacing:.05em;text-transform:uppercase;
+    padding:10px 16px;border-radius:4px;border:1px solid #000;
+    background:linear-gradient(180deg,#555,#333);color:var(--c-text);
+    box-shadow:0 2px 4px rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.08);
+    cursor:pointer;transition:all .1s;display:inline-flex;align-items:center;gap:8px;
+  }
+  .btn-console svg{width:14px;height:14px;flex:none; opacity: 0.7;}
+  .btn-console:hover:not(:disabled){filter:brightness(1.1);}
+  .btn-console:active:not(:disabled){transform:translateY(1px); background:#333;}
+  .btn-console:disabled{opacity:.4;cursor:not-allowed;}
+  
+  .btn-blue{border-color:#14335c;background:linear-gradient(180deg,var(--c-blue),#1a4b8f);color:#fff;}
+  
+  .ab-group{display:inline-flex;border-radius:4px;overflow:hidden;border:1px solid #000;box-shadow:0 2px 4px rgba(0,0,0,.4);}
+  .ab-btn{padding:10px 15px;font-size:11px;font-weight:700;letter-spacing:.05em;text-transform: uppercase; background:linear-gradient(180deg,#444,#2a2a2a);color:var(--c-text-dim);border:none;border-right: 1px solid #000; cursor:pointer;}
+  .ab-btn:last-child{border-right: none;}
+  .ab-btn.active{background:linear-gradient(180deg,#666,var(--c-panel));color:#fff; box-shadow: inset 0 1px 3px rgba(0,0,0,0.5);}
+
+  /* ---------- CONSOLA DE PARÁMETROS ---------- */
+  .deck-wrap{
+    background:var(--c-chassis);
+    border:2px solid #000;
+    border-radius:8px;
+    padding:20px;
+    box-shadow:inset 0 2px 10px rgba(0,0,0,0.8);
+    margin-bottom: 25px;
+    position: relative;
+  }
+  .deck-wrap::before{ content:''; position:absolute; top:10px; left:10px; right:10px; bottom:10px; border: 1px solid rgba(255,255,255,0.03); pointer-events: none; border-radius: 4px;}
+  .deck-label-main{text-align:center;font-size:12px;letter-spacing:.2em;color:var(--c-metal);font-weight:800;text-transform:uppercase; margin-bottom: 20px; text-shadow: 0 1px 0 #000;}
+
+  .control-grid{
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 12px;
+  }
+  @media (max-width: 850px) { .control-grid { grid-template-columns: repeat(3, 1fr); } }
+  @media (max-width: 550px) { .control-grid { grid-template-columns: repeat(2, 1fr); } }
+
+  .console-module{
+    background: var(--c-panel);
+    border: 1px solid #000;
+    border-radius: 6px;
+    padding: 12px 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.05);
+    min-height: 145px;
+    position: relative;
+  }
+
+  .module-label{font-size:9.5px;letter-spacing:.08em;color:var(--c-text);font-weight:700;text-transform:uppercase;text-align:center; border-bottom: 1px solid rgba(0,0,0,0.2); padding-bottom: 4px; width: 90%;}
+  .module-value{font-family:'JetBrains Mono';font-size:11px;color:var(--c-amber);font-weight:700; background:#000; padding: 2px 5px; border-radius: 3px; border: 1px solid #222; min-width: 55px; text-align: center;}
+
+  /* Perilla Clásica */
+  .knob{width:52px;height:52px;border-radius:50%;background:radial-gradient(circle at 50% 50%,#555 0%, #222 70%, #111 100%);border:2px solid #000;box-shadow:0 4px 8px rgba(0,0,0,0.7), inset 0 1px 1px rgba(255,255,255,0.1);position:relative;cursor:ns-resize;touch-action:none;}
+  .knob::after{content:'';position:absolute;top:4px;left:50%;width:3px;height:18px;background:#fff;border-radius:1px;transform:translateX(-50%) rotate(var(--rot,-135deg));transform-origin:50% 22px; box-shadow: 0 0 2px #000;}
+  .knob::before{content:''; position:absolute; inset: 13px; border-radius: 50%; background: linear-gradient(150deg, #999, #444); border: 1px solid #000;}
+
+  /* Selectores */
+  .stepper{display:flex;align-items:center;gap:2px; background:#111; border: 1px solid #000; border-radius: 4px; padding: 2px;}
+  .stepper-btn{width:22px;height:22px;border-radius:2px;background:linear-gradient(180deg,#444,#222);border:1px solid #000;color:var(--c-text);font-size:12px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+  .lcd-mini{min-width:50px;text-align:center;font-family:'JetBrains Mono';font-weight:700;color:#4f9bff; background:#000; border-radius:2px;padding:3px;font-size:11px;}
+
+  /* Switch */
+  .switch{position:relative;display:inline-block;width:42px;height:24px;cursor:pointer;}
+  .switch input{opacity:0;width:0;height:0;position:absolute;}
+  .switch-track{position:absolute;inset:0;background:#111;border:2px solid #000;border-radius:4px;box-shadow:inset 0 1px 3px rgba(0,0,0,.7);}
+  .switch-thumb{position:absolute;top:2px;left:2px;width:14px;height:16px;border-radius:2px;background:linear-gradient(180deg,var(--c-metal),#555);transition:.15s;border: 1px solid #000;}
+  .switch input:checked + .switch-track .switch-thumb{transform:translateX(20px); background:linear-gradient(180deg,var(--c-blue), #14335c);}
+
+  /* ---------- SECCIÓN DE MICRÓFONO CON DOS MODOS ---------- */
+  .mic-section{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    margin-top: 10px;
+    padding-top: 20px;
+    border-top: 1px solid rgba(0,0,0,0.3);
+  }
+  
+  .mic-mode-toggle{
+    display: inline-flex;
+    border-radius: 6px;
+    border: 1px solid #000;
+    overflow: hidden;
+    margin-bottom: 15px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+  }
+  .mic-mode-btn{
+    padding: 8px 16px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .05em;
+    text-transform: uppercase;
+    background: linear-gradient(180deg,#444,#222);
+    color: var(--c-text-dim);
+    border: none;
+    cursor: pointer;
+  }
+  .mic-mode-btn.active{
+    background: linear-gradient(180deg,var(--c-blue),#14335c);
+    color: #fff;
+    box-shadow: inset 0 1px 2px rgba(0,0,0,0.5);
+  }
+
+  .mic-btn{width:100px;height:100px;border-radius:50%;background:radial-gradient(circle at 50% 50%,#333 0%, #1a1a1a 70%, #000 100%);border:5px solid #111;box-shadow:0 10px 20px rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;color:#555;cursor:pointer;position:relative;transition:all .3s ease;}
+  .mic-btn svg{width:36px;height:36px; transition: all 0.3s;}
+  
+  /* Estado Monitor Activo (Verde/Azul) */
+  .mic-btn.active-live{
+    color: var(--c-blue);
+    border-color: var(--c-blue);
+    box-shadow: 0 0 15px rgba(47, 125, 225, 0.4);
+  }
+
+  /* Estado Grabación Activa (Rojo Pulsante) */
+  .mic-btn.recording{
+    color:var(--c-red);
+    box-shadow:0 0 5px rgba(229,52,44,0.2),0 0 30px rgba(229,52,44,0.4);
+    background:radial-gradient(circle at 50% 50%,#2a1a1a 0%, #1a0a0a 70%, #000 100%);
+    animation:pulseRec 1.5s ease-in-out infinite;
+  }
+  @keyframes pulseRec{0%,100%{transform:scale(1);}50%{transform:scale(1.02);}}
+  
+  .mic-caption{margin-top:10px;text-align:center;font-size:11px;letter-spacing:.15em;color:var(--c-text);font-weight:700; text-transform: uppercase;}
+  .mic-timer{font-family:'JetBrains Mono';font-size:12px;color:#ef4444;font-weight:700;margin-top:4px;min-height:18px; background: #000; padding: 2px 8px; border-radius: 4px; border: 1px solid #222;}
+
+  .level-meter{display:flex;gap:3px;margin-top:8px; background: #111; padding: 5px; border-radius: 4px; border: 1px solid #000;}
+  .level-seg{width:6px;height:14px;border-radius:1px;background:#222;border:1px solid #000;}
+  .level-seg.on-g{background:var(--c-green); box-shadow: 0 0 6px rgba(63, 174, 92, 0.6);}
+  .level-seg.on-a{background:var(--c-amber); box-shadow: 0 0 6px rgba(232, 163, 61, 0.6);}
+  .level-seg.on-r{background:var(--c-red); box-shadow: 0 0 8px rgba(229, 52, 44, 0.8);}
+
+  .footnote{text-align:center;font-size:10px;color:var(--c-text-dim);letter-spacing:.04em;padding:25px 20px 5px; border-top: 1px solid rgba(0,0,0,0.2); margin-top: 15px;}
+</style>
+</head>
+<body>
+
+<div class="rack">
+  <div class="faceplate">
+    
+    <div class="screw tl"></div><div class="screw tr"></div>
+    <div class="screw bl"></div><div class="screw br"></div>
+
+    <!-- ENCABEZADO -->
+    <div class="console-header">
+      <div class="brand">
+        <div class="brand-badge">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--c-metal)" stroke-width="2.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 18.75a6 6 0 006-6v-1.5m-6 7.5a6 6 0 01-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15.75a3 3 0 003-3V4.5a3 3 0 10-6 0v8.25a3 3 0 003 3z"/>
+          </svg>
+        </div>
+        <div>
+          <div class="brand-title">AUTOTUNE&nbsp;5100&nbsp;VINTAGE</div>
+          <div class="brand-sub">Procesador Vocal en Tiempo Real</div>
+        </div>
+      </div>
+      <div class="led-group" style="background:#000; padding: 5px 10px; border-radius: 4px; border: 1px solid #222;">
+          <span class="led led-blue on"></span><span class="led-label">DSP EN TIEMPO REAL</span>
+      </div>
+    </div>
+
+    <!-- PANTALLA PRINCIPAL -->
+    <section class="screen-bezel">
+      <div class="screen-topbar">
+        <div class="led-group">
+          <span class="led led-red" id="recLed"></span><span class="led-label">REC</span>
+        </div>
+        <div id="statusLine" class="status-line">Carga un MP3 o usa el micrófono...</div>
+        <div id="liveReadout" class="live-readout"></div>
+      </div>
+
+      <div class="screen-inner">
+        <div class="scope-row">
+          <span class="scope-label">Forma de onda y Afinación</span>
+          <span class="scope-sub" id="sourceLabel">Sin señal</span>
+        </div>
+        <canvas id="waveCanvas" class="scope-canvas"></canvas>
+      </div>
+
+      <div class="timeline-row">
+        <button id="btnPlay" class="transport-btn" title="Reproducir / Pausar" disabled>▶</button>
+        <span id="currentTimeReadout" class="time-readout font-mono">00:00</span>
+        <input type="range" id="seekRange" min="0" max="1000" value="0" class="seek-slider" disabled>
+        <span id="durationReadout" class="time-readout font-mono">00:00</span>
+      </div>
+    </section>
+
+    <!-- BOTONERA -->
+    <div class="action-row">
+      <button id="btnUpload" class="btn-console btn-blue">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 8.25L12 3.75m0 0L7.5 8.25M12 3.75v13.5"/></svg>
+        Cargar MP3
+      </button>
+      <input type="file" id="fileInput" accept="audio/*" style="display:none">
+
+      <div class="ab-group">
+        <button id="abOriginal" class="ab-btn active">Original</button>
+        <button id="abProcessed" class="ab-btn">Autotune</button>
+      </div>
+
+      <button id="btnSave" class="btn-console" disabled>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 12m0 0l4.5-4.5M12 12V3"/></svg>
+        Guardar WAV
+      </button>
+
+      <button id="btnDelete" class="btn-console" disabled>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"/></svg>
+        Limpiar
+      </button>
+    </div>
+
+    <!-- CONSOLA DE PARÁMETROS EN TIEMPO REAL -->
+    <div class="deck-wrap">
+      <div class="deck-label-main">Panel de Afinación Vocal en Tiempo Real</div>
+      
+      <div class="control-grid">
+        <!-- 1. Tono Raíz -->
+        <div class="console-module">
+            <span class="module-label">Nota Tónica</span>
+            <div class="stepper">
+              <button class="stepper-btn" id="keyPrev">‹</button>
+              <span class="lcd-mini" id="keyDisplay">C</span>
+              <button class="stepper-btn" id="keyNext">›</button>
+            </div>
+            <span class="module-value" id="valKeySub">Fundamental</span>
+        </div>
+
+        <!-- 2. Tipo de Escala -->
+        <div class="console-module">
+            <span class="module-label">Escala</span>
+            <div class="stepper">
+              <button class="stepper-btn" id="scalePrev">‹</button>
+              <span class="lcd-mini" id="scaleDisplay" style="min-width:62px;font-size:10px;">MAYOR</span>
+              <button class="stepper-btn" id="scaleNext">›</button>
+            </div>
+            <span class="module-value" id="valScaleSub">Modo</span>
+        </div>
+
+        <!-- 3. Velocidad de Corrección -->
+        <div class="console-module">
+            <span class="module-label">Vel. Retune</span>
+            <div class="knob" id="knobRetune" tabindex="0"></div>
+            <span class="module-value" id="valRetune">0 ms</span>
+        </div>
+
+        <!-- 4. Fuerza / Corrección -->
+        <div class="console-module">
+            <span class="module-label">Intensidad</span>
+            <div class="knob" id="knobStrength" tabindex="0"></div>
+            <span class="module-value" id="valStrength">100%</span>
+        </div>
+
+        <!-- 5. Transposición -->
+        <div class="console-module">
+            <span class="module-label">Transponer</span>
+            <div class="knob" id="knobTranspose" tabindex="0"></div>
+            <span class="module-value" id="valTranspose">0 Semis</span>
+        </div>
+
+        <!-- 6. Humanizar -->
+        <div class="console-module">
+            <span class="module-label">Humanizar</span>
+            <div class="knob" id="knobHumanize" tabindex="0"></div>
+            <span class="module-value" id="valHumanize">10%</span>
+        </div>
+
+        <!-- 7. Corrección de Formantes -->
+        <div class="console-module">
+            <span class="module-label">Formante</span>
+            <div class="knob" id="knobFormant" tabindex="0"></div>
+            <span class="module-value" id="valFormant">0.0</span>
+        </div>
+
+        <!-- 8. Mezcla Dry / Wet -->
+        <div class="console-module">
+            <span class="module-label">Mezcla (Mix)</span>
+            <div class="knob" id="knobMix" tabindex="0"></div>
+            <span class="module-value" id="valMix">100% Wet</span>
+        </div>
+
+        <!-- 9. Ganancia de Salida -->
+        <div class="console-module">
+            <span class="module-label">Ganancia</span>
+            <div class="knob" id="knobGain" tabindex="0"></div>
+            <span class="module-value" id="valGain">0.0 dB</span>
+        </div>
+
+        <!-- 10. Bypass de Efecto -->
+        <div class="console-module">
+            <span class="module-label">Efecto / Bypass</span>
+            <label class="switch">
+              <input type="checkbox" id="toggleBypass" checked>
+              <span class="switch-track"><span class="switch-thumb"></span></span>
+            </label>
+            <span class="module-value" id="valBypass">ACTIVO</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECCIÓN DE MICRÓFONO CON CONMUTADOR DE MODO -->
+    <div class="mic-section">
+        <!-- SELECCIÓN DE MODO: EN VIVO VS GRABAR -->
+        <div class="mic-mode-toggle">
+          <button id="modeLiveBtn" class="mic-mode-btn active">🎙 En Vivo (Sin Grabar)</button>
+          <button id="modeRecBtn" class="mic-mode-btn">🔴 Grabar Audio Vocal</button>
+        </div>
+
+        <button id="btnMic" class="mic-btn" aria-label="Activar Micrófono">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 18.75a6 6 0 006-6v-1.5m-6 7.5a6 6 0 01-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15.75a3 3 0 003-3V4.5a3 3 0 10-6 0v8.25a3 3 0 003 3z"/>
+            </svg>
+        </button>
+
+        <div class="mic-caption" id="micStateLabel">Micrófono en Vivo Activo</div>
+        <div class="mic-timer" id="micTimer">00:00</div>
+        <div class="level-meter" id="levelMeter"></div>
+    </div>
+
+    <p class="footnote">Procesamiento Vocal Web Audio API · Cambio de parámetros instantáneo · Pulsa 'Grabar Audio Vocal' para capturar tus tomas.</p>
+  </div>
+</div>
+
+<script>
+/* ======================================================================
+   MOTOR DE AUDIO DSP Y LÓGICA GENERAL
+   ====================================================================== */
+
+const NOTE_NAMES = ["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
+const SCALES = {
+  "MAYOR": [0,2,4,5,7,9,11],
+  "MENOR": [0,2,3,5,7,8,10],
+  "CROMÁTICA": [0,1,2,3,4,5,6,7,8,9,10,11],
+  "PENT. MAYOR": [0,2,4,7,9],
+  "PENT. MENOR": [0,3,5,7,10],
+  "BLUES": [0,3,5,6,7,10]
+};
+const SCALE_NAMES = Object.keys(SCALES);
+
+// Parámetros de afinación
+const params = {
+  rootIndex: 0,
+  scaleName: "MAYOR",
+  retuneMs: 0,
+  strength: 1.0,
+  transpose: 0,
+  humanize: 0.1,
+  formantShift: 0,
+  mix: 1.0,
+  gainDb: 0,
+  active: true,
+  useAutotune: true
+};
+
+let audioCtx = null;
+let sampleRate = 44100;
+let originalAudioBuffer = null;
+let scriptNode = null;
+let audioSourceNode = null;
+let micStream = null;
+
+// Control de Micrófono / Grabación
+let currentMicMode = "live"; // "live" o "record"
+let isMicActive = false;
+let mediaRecorder = null;
+let recordedChunks = [];
+let recTimerInterval = null;
+let recSeconds = 0;
+
+let isPlaying = false;
+let playStartTime = 0;
+let playOffset = 0;
+let animFrameId = null;
+
+function ensureAudioCtx(){
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (audioCtx.state === "suspended") audioCtx.resume();
+  sampleRate = audioCtx.sampleRate;
+  return audioCtx;
+}
+
+/* ---------------- DETECCIÓN Y AFINACIÓN ---------------- */
+function detectPitch(buffer, sampleRate) {
+  let SIZE = buffer.length;
+  let rms = 0;
+  for (let i = 0; i < SIZE; i++) rms += buffer[i] * buffer[i];
+  rms = Math.sqrt(rms / SIZE);
+  if (rms < 0.008) return -1;
+
+  let minLag = Math.floor(sampleRate / 800);
+  let maxLag = Math.floor(sampleRate / 65);
+
+  let bestLag = -1, bestCorr = -1;
+  for (let lag = minLag; lag <= maxLag; lag++) {
+    let sum = 0;
+    for (let i = 0; i < SIZE - lag; i++) {
+      sum += buffer[i] * buffer[i + lag];
+    }
+    if (sum > bestCorr) {
+      bestCorr = sum;
+      bestLag = lag;
+    }
+  }
+  return bestLag > 0 ? sampleRate / bestLag : -1;
+}
+
+function getTargetFrequency(freq, rootIdx, scaleName) {
+  if (freq <= 0) return freq;
+  let midi = 69 + 12 * Math.log2(freq / 440);
+  let allowed = SCALES[scaleName] || SCALES["CROMÁTICA"];
+  
+  let rounded = Math.round(midi);
+  let bestMidi = rounded;
+  let minDist = Infinity;
+
+  for (let m = rounded - 12; m <= rounded + 12; m++) {
+    let rel = ((m - rootIdx) % 12 + 12) % 12;
+    if (allowed.includes(rel)) {
+      let dist = Math.abs(m - midi);
+      if (dist < minDist) {
+        minDist = dist;
+        bestMidi = m;
+      }
+    }
+  }
+
+  bestMidi += params.transpose;
+  return 440 * Math.pow(2, (bestMidi - 69) / 12);
+}
+
+let currentPitchRatio = 1.0;
+
+function processAudioBlock(inputChunk, outputChunk) {
+  let freq = detectPitch(inputChunk, sampleRate);
+  let targetRatio = 1.0;
+
+  if (freq > 0 && params.active && params.useAutotune) {
+    let targetFreq = getTargetFrequency(freq, params.rootIndex, params.scaleName);
+    let rawRatio = targetFreq / freq;
+
+    rawRatio = 1.0 + (rawRatio - 1.0) * params.strength;
+
+    if (params.humanize > 0) {
+      rawRatio *= 1.0 + (Math.random() - 0.5) * 0.015 * params.humanize;
+    }
+
+    targetRatio = rawRatio;
+
+    let currentMidi = Math.round(69 + 12 * Math.log2(targetFreq / 440));
+    let noteName = NOTE_NAMES[((currentMidi % 12) + 12) % 12];
+    document.getElementById("liveReadout").textContent = `${noteName} (${freq.toFixed(1)} Hz ➔ ${targetFreq.toFixed(1)} Hz)`;
+  } else {
+    document.getElementById("liveReadout").textContent = freq > 0 ? `${freq.toFixed(1)} Hz` : "---";
+  }
+
+  let alpha = params.retuneMs <= 5 ? 1.0 : Math.min(1.0, 20 / params.retuneMs);
+  currentPitchRatio += (targetRatio - currentPitchRatio) * alpha;
+
+  let finalRatio = currentPitchRatio * Math.pow(2, params.formantShift / 12);
+
+  let gain = Math.pow(10, params.gainDb / 20);
+  let mix = params.active && params.useAutotune ? params.mix : 0.0;
+
+  for (let i = 0; i < outputChunk.length; i++) {
+    let srcIdx = i * finalRatio;
+    let idx0 = Math.floor(srcIdx);
+    let idx1 = Math.min(inputChunk.length - 1, idx0 + 1);
+    let frac = srcIdx - idx0;
+
+    let wetSample = (inputChunk[idx0] * (1 - frac) + inputChunk[idx1] * frac);
+    let drySample = inputChunk[i];
+
+    outputChunk[i] = (drySample * (1 - mix) + wetSample * mix) * gain;
+  }
+}
+
+function setupRealtimeDSP() {
+  ensureAudioCtx();
+  if (scriptNode) scriptNode.disconnect();
+
+  const bufferSize = 2048;
+  scriptNode = audioCtx.createScriptProcessor(bufferSize, 1, 1);
+
+  scriptNode.onaudioprocess = (e) => {
+    const input = e.inputBuffer.getChannelData(0);
+    const output = e.outputBuffer.getChannelData(0);
+
+    processAudioBlock(input, output);
+
+    let rms = 0;
+    for (let i = 0; i < input.length; i++) rms += input[i] * input[i];
+    rms = Math.sqrt(rms / input.length);
+    updateLevelMeter(rms * 5);
+
+    drawLiveWave(output);
+  };
+}
+
+/* =======================================================================
+   REPRODUCCIÓN Y CONTROL DE PANTALLA
+   ======================================================================= */
+function startPlayback(offsetSeconds = 0) {
+  if (!originalAudioBuffer) return;
+  ensureAudioCtx();
+  stopPlayback();
+  setupRealtimeDSP();
+
+  audioSourceNode = audioCtx.createBufferSource();
+  audioSourceNode.buffer = originalAudioBuffer;
+
+  playOffset = offsetSeconds;
+  playStartTime = audioCtx.currentTime - playOffset;
+
+  audioSourceNode.connect(scriptNode);
+  scriptNode.connect(audioCtx.destination);
+
+  audioSourceNode.start(0, playOffset);
+  isPlaying = true;
+
+  document.getElementById("btnPlay").textContent = "❚❚";
+  document.getElementById("statusLine").textContent = "Reproduciendo audio con autotune...";
+  updatePlayheadLoop();
+}
+
+function stopPlayback() {
+  if (audioSourceNode) {
+    try { audioSourceNode.stop(); } catch(e){}
+    audioSourceNode.disconnect();
+    audioSourceNode = null;
+  }
+  if (scriptNode) scriptNode.disconnect();
+  isPlaying = false;
+  document.getElementById("btnPlay").textContent = "▶";
+  if (animFrameId) cancelAnimationFrame(animFrameId);
+}
+
+function updatePlayheadLoop() {
+  if (!isPlaying || !originalAudioBuffer) return;
+  let current = audioCtx.currentTime - playStartTime;
+  let total = originalAudioBuffer.duration;
+
+  if (current >= total) {
+    stopPlayback();
+    playOffset = 0;
+    document.getElementById("currentTimeReadout").textContent = "00:00";
+    document.getElementById("seekRange").value = 0;
+    return;
+  }
+
+  document.getElementById("currentTimeReadout").textContent = formatTime(current);
+  document.getElementById("seekRange").value = (current / total) * 1000;
+  animFrameId = requestAnimationFrame(updatePlayheadLoop);
+}
+
+/* =======================================================================
+   GESTIÓN DEL MICRÓFONO (DOS MODOS: EN VIVO Y GRABAR)
+   ======================================================================= */
+const modeLiveBtn = document.getElementById("modeLiveBtn");
+const modeRecBtn = document.getElementById("modeRecBtn");
+const btnMic = document.getElementById("btnMic");
+
+modeLiveBtn.onclick = () => setMicMode("live");
+modeRecBtn.onclick = () => setMicMode("record");
+
+function setMicMode(mode) {
+  if (isMicActive) stopMic();
+  currentMicMode = mode;
+
+  if (mode === "live") {
+    modeLiveBtn.classList.add("active");
+    modeRecBtn.classList.remove("active");
+    document.getElementById("micStateLabel").textContent = "Micrófono en Vivo (Sin Grabar)";
+  } else {
+    modeRecBtn.classList.add("active");
+    modeLiveBtn.classList.remove("active");
+    document.getElementById("micStateLabel").textContent = "Listo para Grabar Toma Vocal";
+  }
+}
+
+btnMic.addEventListener("click", () => {
+  if (isMicActive) {
+    stopMic();
+  } else {
+    startMic();
+  }
+});
+
+async function startMic() {
+  ensureAudioCtx();
+  stopPlayback();
+
+  try {
+    micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    setupRealtimeDSP();
+
+    let micSource = audioCtx.createMediaStreamSource(micStream);
+    micSource.connect(scriptNode);
+    scriptNode.connect(audioCtx.destination);
+
+    isMicActive = true;
+
+    if (currentMicMode === "live") {
+      // MODO 1: EN VIVO (MONITORIZAR SIN GRABAR)
+      btnMic.classList.add("active-live");
+      document.getElementById("statusLine").textContent = "Micrófono en vivo activo. Prueba efectos en tiempo real.";
+      document.getElementById("micStateLabel").textContent = "Escuchando en Vivo...";
+    } else {
+      // MODO 2: GRABAR AUDIO
+      btnMic.classList.add("recording");
+      document.getElementById("recLed").classList.add("on");
+      document.getElementById("statusLine").textContent = "Grabando tu voz... Canta o habla ahora.";
+      document.getElementById("micStateLabel").textContent = "Grabando Voz...";
+
+      recordedChunks = [];
+      mediaRecorder = new MediaRecorder(micStream);
+      mediaRecorder.ondataavailable = e => { if (e.data.size > 0) recordedChunks.push(e.data); };
+      
+      mediaRecorder.onstop = async () => {
+        let blob = new Blob(recordedChunks, { type: "audio/webm" });
+        let arrayBuf = await blob.arrayBuffer();
+        
+        // Cargar automáticamente en el reproductor principal
+        audioCtx.decodeAudioData(arrayBuf, decoded => {
+          originalAudioBuffer = decoded;
+          document.getElementById("sourceLabel").textContent = "Grabación Vocal (" + formatTime(decoded.duration) + ")";
+          document.getElementById("durationReadout").textContent = formatTime(decoded.duration);
+          document.getElementById("btnPlay").disabled = false;
+          document.getElementById("seekRange").disabled = false;
+          document.getElementById("btnSave").disabled = false;
+          document.getElementById("btnDelete").disabled = false;
+          document.getElementById("statusLine").textContent = "Grabación cargada en pantalla. Lista para modificar con autotune.";
+        });
+      };
+
+      mediaRecorder.start();
+      startTimer();
+    }
+  } catch (err) {
+    alert("Error al acceder al micrófono: " + err.message);
+  }
+}
+
+function stopMic() {
+  if (micStream) {
+    micStream.getTracks().forEach(t => t.stop());
+    micStream = null;
+  }
+  if (scriptNode) scriptNode.disconnect();
+
+  if (mediaRecorder && mediaRecorder.state !== "inactive") {
+    mediaRecorder.stop();
+  }
+
+  isMicActive = false;
+  btnMic.classList.remove("active-live", "recording");
+  document.getElementById("recLed").classList.remove("on");
+  stopTimer();
+
+  if (currentMicMode === "live") {
+    document.getElementById("micStateLabel").textContent = "Micrófono en Vivo (Desactivado)";
+    document.getElementById("statusLine").textContent = "Micrófono en vivo detenido.";
+  } else {
+    document.getElementById("micStateLabel").textContent = "Listo para Grabar Toma Vocal";
+  }
+
+  updateLevelMeter(0);
+}
+
+function startTimer() {
+  recSeconds = 0;
+  document.getElementById("micTimer").textContent = "00:00";
+  recTimerInterval = setInterval(() => {
+    recSeconds++;
+    document.getElementById("micTimer").textContent = formatTime(recSeconds);
+  }, 1000);
+}
+
+function stopTimer() {
+  if (recTimerInterval) clearInterval(recTimerInterval);
+  document.getElementById("micTimer").textContent = "00:00";
+}
+
+/* =======================================================================
+   UI Y COMPONENTES
+   ======================================================================= */
+function formatTime(s) {
+  let m = Math.floor(s / 60);
+  let sec = Math.floor(s % 60);
+  return String(m).padStart(2,"0") + ":" + String(sec).padStart(2,"0");
+}
+
+function updateLevelMeter(val) {
+  let segs = document.getElementById("levelMeter").children;
+  let active = Math.round(Math.min(1, val) * segs.length);
+  for (let i = 0; i < segs.length; i++) {
+    segs[i].className = "level-seg" + (i < active ? (i < 8 ? " on-g" : (i < 11 ? " on-a" : " on-r")) : "");
+  }
+}
+
+const levelMeterEl = document.getElementById("levelMeter");
+for (let i = 0; i < 14; i++) {
+  let seg = document.createElement("div");
+  seg.className = "level-seg";
+  levelMeterEl.appendChild(seg);
+}
+
+const waveCanvas = document.getElementById("waveCanvas");
+const waveCtx = waveCanvas.getContext("2d");
+
+function drawLiveWave(buffer) {
+  let w = waveCanvas.width = waveCanvas.clientWidth;
+  let h = waveCanvas.height = waveCanvas.clientHeight;
+  waveCtx.fillStyle = "#05070a";
+  waveCtx.fillRect(0, 0, w, h);
+
+  waveCtx.beginPath();
+  waveCtx.strokeStyle = params.useAutotune ? "#4f9bff" : "#e8a33d";
+  waveCtx.lineWidth = 1.5;
+
+  let step = Math.ceil(buffer.length / w);
+  let mid = h / 2;
+
+  for (let i = 0; i < w; i++) {
+    let val = buffer[i * step] || 0;
+    let y = mid + val * mid * 0.9;
+    if (i === 0) waveCtx.moveTo(i, y);
+    else waveCtx.lineTo(i, y);
+  }
+  waveCtx.stroke();
+}
+
+/* ---------------- FABRICA DE PERILLAS (KNOBS) ---------------- */
+function createKnob(id, opts) {
+  let el = document.getElementById(id);
+  let state = { min: opts.min, max: opts.max, value: opts.value, step: opts.step || 0.01, default: opts.value };
+
+  function setVal(v, notify = true) {
+    v = Math.max(state.min, Math.min(state.max, v));
+    v = Math.round(v / state.step) * state.step;
+    state.value = v;
+
+    let norm = (v - state.min) / (state.max - state.min);
+    let deg = -135 + norm * 270;
+    el.style.setProperty("--rot", deg + "deg");
+
+    if (opts.valEl) opts.valEl.textContent = opts.format ? opts.format(v) : v;
+    if (notify && opts.onChange) opts.onChange(v);
+  }
+
+  let dragging = false, startY = 0, startVal = 0;
+  el.addEventListener("pointerdown", e => {
+    dragging = true; startY = e.clientY; startVal = state.value;
+    el.setPointerCapture(e.pointerId);
+  });
+  el.addEventListener("pointermove", e => {
+    if (!dragging) return;
+    let dy = startY - e.clientY;
+    let range = state.max - state.min;
+    setVal(startVal + (dy / 150) * range);
+  });
+  el.addEventListener("pointerup", () => dragging = false);
+  el.addEventListener("dblclick", () => setVal(state.default));
+
+  setVal(state.value, false);
+}
+
+createKnob("knobRetune", { min: 0, max: 200, value: params.retuneMs, step: 1, valEl: document.getElementById("valRetune"), format: v => v + " ms", onChange: v => params.retuneMs = v });
+createKnob("knobStrength", { min: 0, max: 1, value: params.strength, step: 0.01, valEl: document.getElementById("valStrength"), format: v => Math.round(v * 100) + "%", onChange: v => params.strength = v });
+createKnob("knobTranspose", { min: -12, max: 12, value: params.transpose, step: 1, valEl: document.getElementById("valTranspose"), format: v => (v > 0 ? "+" : "") + v + " Semis", onChange: v => params.transpose = v });
+createKnob("knobHumanize", { min: 0, max: 1, value: params.humanize, step: 0.01, valEl: document.getElementById("valHumanize"), format: v => Math.round(v * 100) + "%", onChange: v => params.humanize = v });
+createKnob("knobFormant", { min: -6, max: 6, value: params.formantShift, step: 0.5, valEl: document.getElementById("valFormant"), format: v => (v > 0 ? "+" : "") + v.toFixed(1), onChange: v => params.formantShift = v });
+createKnob("knobMix", { min: 0, max: 1, value: params.mix, step: 0.01, valEl: document.getElementById("valMix"), format: v => Math.round(v * 100) + "% Wet", onChange: v => params.mix = v });
+createKnob("knobGain", { min: -12, max: 12, value: params.gainDb, step: 0.5, valEl: document.getElementById("valGain"), format: v => (v > 0 ? "+" : "") + v.toFixed(1) + " dB", onChange: v => params.gainDb = v });
+
+document.getElementById("keyPrev").onclick = () => { params.rootIndex = (params.rootIndex + 11) % 12; document.getElementById("keyDisplay").textContent = NOTE_NAMES[params.rootIndex]; };
+document.getElementById("keyNext").onclick = () => { params.rootIndex = (params.rootIndex + 1) % 12; document.getElementById("keyDisplay").textContent = NOTE_NAMES[params.rootIndex]; };
+
+let currentScaleIdx = 0;
+document.getElementById("scalePrev").onclick = () => { currentScaleIdx = (currentScaleIdx + SCALE_NAMES.length - 1) % SCALE_NAMES.length; params.scaleName = SCALE_NAMES[currentScaleIdx]; document.getElementById("scaleDisplay").textContent = params.scaleName; };
+document.getElementById("scaleNext").onclick = () => { currentScaleIdx = (currentScaleIdx + 1) % SCALE_NAMES.length; params.scaleName = SCALE_NAMES[currentScaleIdx]; document.getElementById("scaleDisplay").textContent = params.scaleName; };
+
+document.getElementById("toggleBypass").onchange = (e) => {
+  params.active = e.target.checked;
+  document.getElementById("valBypass").textContent = params.active ? "ACTIVO" : "BYPASS";
+};
+
+document.getElementById("abOriginal").onclick = () => {
+  params.useAutotune = false;
+  document.getElementById("abOriginal").classList.add("active");
+  document.getElementById("abProcessed").classList.remove("active");
+};
+document.getElementById("abProcessed").onclick = () => {
+  params.useAutotune = true;
+  document.getElementById("abProcessed").classList.add("active");
+  document.getElementById("abOriginal").classList.remove("active");
+};
+
+/* =======================================================================
+   CARGA Y GESTIÓN DE ARCHIVOS
+   ======================================================================= */
+document.getElementById("btnUpload").onclick = () => document.getElementById("fileInput").click();
+
+document.getElementById("fileInput").onchange = async (e) => {
+  let file = e.target.files[0];
+  if (!file) return;
+  ensureAudioCtx();
+  document.getElementById("statusLine").textContent = "Cargando audio...";
+
+  try {
+    let buf = await file.arrayBuffer();
+    audioCtx.decodeAudioData(buf, decoded => {
+      originalAudioBuffer = decoded;
+      document.getElementById("sourceLabel").textContent = file.name;
+      document.getElementById("durationReadout").textContent = formatTime(decoded.duration);
+      document.getElementById("btnPlay").disabled = false;
+      document.getElementById("seekRange").disabled = false;
+      document.getElementById("btnSave").disabled = false;
+      document.getElementById("btnDelete").disabled = false;
+      document.getElementById("statusLine").textContent = "Audio listo. Pulsa reproducir para afinar en vivo.";
+    });
+  } catch (err) {
+    alert("Error al cargar el archivo de audio.");
+  }
+};
+
+document.getElementById("btnPlay").onclick = () => {
+  if (isPlaying) stopPlayback();
+  else startPlayback(playOffset);
+};
+
+document.getElementById("seekRange").oninput = (e) => {
+  if (!originalAudioBuffer) return;
+  let pct = e.target.value / 1000;
+  playOffset = pct * originalAudioBuffer.duration;
+  document.getElementById("currentTimeReadout").textContent = formatTime(playOffset);
+  if (isPlaying) startPlayback(playOffset);
+};
+
+document.getElementById("btnDelete").onclick = () => {
+  stopPlayback();
+  originalAudioBuffer = null;
+  document.getElementById("sourceLabel").textContent = "Sin señal";
+  document.getElementById("durationReadout").textContent = "00:00";
+  document.getElementById("currentTimeReadout").textContent = "00:00";
+  document.getElementById("btnPlay").disabled = true;
+  document.getElementById("seekRange").disabled = true;
+  document.getElementById("btnSave").disabled = true;
+  document.getElementById("btnDelete").disabled = true;
+  document.getElementById("statusLine").textContent = "Pantalla limpia. Carga un MP3 o graba una nueva toma.";
+};
+
+document.getElementById("btnSave").onclick = async () => {
+  if (!originalAudioBuffer) return;
+  document.getElementById("statusLine").textContent = "Exportando audio afinado...";
+  
+  let offlineCtx = new OfflineAudioContext(1, originalAudioBuffer.length, sampleRate);
+  let src = offlineCtx.createBufferSource();
+  src.buffer = originalAudioBuffer;
+
+  let script = offlineCtx.createScriptProcessor(2048, 1, 1);
+  script.onaudioprocess = (e) => {
+    let input = e.inputBuffer.getChannelData(0);
+    let output = e.outputBuffer.getChannelData(0);
+    processAudioBlock(input, output);
+  };
+
+  src.connect(script);
+  script.connect(offlineCtx.destination);
+  src.start(0);
+
+  let rendered = await offlineCtx.startRendering();
+  let wavBlob = bufferToWav(rendered);
+
+  let a = document.createElement("a");
+  a.href = URL.createObjectURL(wavBlob);
+  a.download = `autotune_procesado_${Date.now()}.wav`;
+  a.click();
+  document.getElementById("statusLine").textContent = "Audio guardado con éxito.";
+};
+
+function bufferToWav(buffer) {
+  let numOfChan = buffer.numberOfChannels,
+      length = buffer.length * numOfChan * 2 + 44,
+      out = new DataView(new ArrayBuffer(length)),
+      channels = [], sample, offset = 0, pos = 0;
+
+  function setUint16(data) { out.setUint16(pos, data, true); pos += 2; }
+  function setUint32(data) { out.setUint32(pos, data, true); pos += 4; }
+
+  setUint32(0x46464952); setUint32(length - 8); setUint32(0x45564157);
+  setUint32(0x20746d66); setUint32(16); setUint16(1); setUint16(numOfChan);
+  setUint32(buffer.sampleRate); setUint32(buffer.sampleRate * 2 * numOfChan);
+  setUint16(numOfChan * 2); setUint16(16); setUint32(0x61746164);
+  setUint32(length - pos - 4);
+
+  for (let i = 0; i < buffer.numberOfChannels; i++) channels.push(buffer.getChannelData(i));
+
+  while (offset < buffer.length) {
+    for (let i = 0; i < numOfChan; i++) {
+      sample = Math.max(-1, Math.min(1, channels[i][offset]));
+      sample = (0.5 + sample < 0 ? sample * 32768 : sample * 32767) | 0;
+      out.setInt16(pos, sample, true); pos += 2;
+    }
+    offset++;
+  }
+  return new Blob([out], { type: "audio/wav" });
+}
+</script>
+</body>
+</html>
